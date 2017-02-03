@@ -58,6 +58,9 @@ def invariant_mass(event, particle1, particle2):
 # Open the .lhe files in python
 ############################################################################################
 file_handles = glob.glob("*.lhe")
+if len(file_handles) == 0:
+    print("I need at least one .lhe file to parse")
+    exit()
 ############################################################################################
 # Open the .lhe file in python, construct an xml tree, and isolate the event generation info
 ############################################################################################
