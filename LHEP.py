@@ -1,9 +1,12 @@
 ############################################################################################
 #        This code parses through .lhe files obtained from madgraph
+#        The code produces a plot of number of events vs invariant mass of two final state
+#         particles
 #        Author :  B. Bhattacharya  (Wayne State University)
 #        Date   :  February 2, 2017
 ############################################################################################
-from __future__ import print_function
+from __future__ import print_function, division
+import glob
 from bs4 import BeautifulSoup
 from numpy import *
 import re
@@ -19,7 +22,8 @@ pdg_id_dict = {'d': 1.0, 'd~':-1.0,'u': 2.0, 'u~':-2.0, 's': 3.0, 's~':-3.0,
 ############################################################################################
 # function to appropriately format a string
 ############################################################################################
-LHEf_cols = ['pdg_id', 'status', 'parent', 'x', 'c1', 'c2', 'px', 'py', 'pz', 'E', 'm', 'x', 'helicity']
+LHEf_cols = ['pdg_id', 'status', 'parent', 'x', 'c1', 'c2', 'px', 'py', 'pz', 'E', 'm', 'x',
+     'helicity']
 ############################################################################################
 # function to appropriately format a string
 ############################################################################################
@@ -33,7 +37,8 @@ def str_format(string):
 # function to extract a particle's kinematic information
 ############################################################################################
 def particle_info(event, particle):
-    entries = [[float(y) for y in x.strip().split()] for x in event.text.strip().split('\n')[1:-6]]
+    entries = [[float(y) for y in x.strip().split()]
+        for x in event.text.strip().split('\n')[1:-6]]
     info = []
     for line in entries:
         if line[0] == pdg_id_dict[particle]:
@@ -43,30 +48,39 @@ def particle_info(event, particle):
 # function to extract the invariant mass of 2 particles
 ############################################################################################
 def invariant_mass(event, particle1, particle2):
-    p1_info = particle_info(event, particle1)[0]
-    p2_info = particle_info(event, particle2)[0]
-    p12_info = [p1_info[i] + p2_info[i] for i in range(4)]
+    p1_info = particle_info(event, particle1)
+    p2_info = particle_info(event, particle2)
+    if len(p1_info) == 0 or len(p2_info) == 0:
+        return 0
+    p12_info = [p1_info[0][i] + p2_info[0][i] for i in range(4)]
     return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
+############################################################################################
+# Open the .lhe files in python
+############################################################################################
+file_handles = glob.glob("*.lhe")
 ############################################################################################
 # Open the .lhe file in python, construct an xml tree, and isolate the event generation info
 ############################################################################################
-data = BeautifulSoup(open("unweighted_events.lhe", 'r').read(), "lxml")
-gen_info = dict([[str_format(y) for y in x.split(':')] for x in 
-           data.mggenerationinfo.string.strip().split('\n')])
-n_of_events = gen_info['#  Number of Events']
-total_cs = gen_info['#  Integrated weight (pb)']
+n_of_events = []
+cs = []
+invariant_mass_list = []
+for handle in file_handles:
+    data = BeautifulSoup(open(handle, 'r').read(), "lxml")
+    gen_info = dict([[str_format(y) for y in x.split(':')]
+        for x in data.mggenerationinfo.string.strip().split('\n')])
+    n_of_events.append(gen_info['#  Number of Events'])
+    cs.append(gen_info['#  Integrated weight (pb)'])
+    all_events = data.find_all('event')
+    for event in all_events:
+        invariant_mass_list.append(invariant_mass(event, 'ta+', 'ta-'))
 ############################################################################################
 # Output : generation information
 ############################################################################################
-print('Total number of events analyzed:', n_of_events)
-print('Total cross section:', total_cs, 'pb')
+print('Total number of events analyzed:', sum(n_of_events))
+print('Total cross section:', sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
+     /sum(n_of_events), 'pb')
 print('Retrieving events ...')
 ############################################################################################
-#
-all_events = data.find_all('event')
-invariant_mass_list = []
-for event in all_events:
-    invariant_mass_list.append(invariant_mass(event, 'ta+', 'ta-'))
 plt.hist(invariant_mass_list, bins=300)
 plt.title('histogram for ta+ ta- events distribution')
 plt.show()
