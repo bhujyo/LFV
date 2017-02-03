@@ -1,0 +1,174 @@
+(**********************************************************************)
+(******     FeynRules model file for an effective field theory   ******)
+(******     The operators considered have mass dimension 6       ******) 
+(******      (2 quarks & 2 leptons)                              ******)
+(******      or mass dimension 7 (2 quarks and 2 gluons)         ******)
+(******     Authors: B. Bhattacharya (Wayne State University)    ******)
+(******              R. Morgan       (Wayne State University)    ******)
+(******    Adapted from C. Degrande's Top Effective Theory Model ******)
+(**********************************************************************)
+
+(* ************************** *)
+(* *****  Information   ***** *)
+(* ************************** *)
+
+M$ModelName = "4FermiEFT";
+
+M$Information = {Authors      -> {"B. Bhattacharya", "R. Morgan"},
+                 Version      -> "1.0",
+				 Date         -> "09. 16. 2016",
+				 Institutions -> {"Wayne State University"},
+				 Emails       -> {"bhujyo@wayne.edu","robertmorgan@wayne.edu"},
+				 References   -> {"A.~A.~Petrov and D.~V.~Zhuridov, ``Lepton flavor-violating transitions in effective field theory and gluonic operators,'' Phys.\ Rev.\ D {\bf 89}, no. 3, 033005 (2014), doi:10.1103/PhysRevD.89.033005 [arXiv:1308.6561 [hep-ph]]."}
+		};
+			
+FeynmanGauge = False;
+
+M$InteractionOrderHierarchy = {
+{NP,1}
+}
+
+M$InteractionOrderLimit = {
+{NP,2}
+}
+
+(****************  Parameters *************)
+
+M$Parameters = {
+
+    (* External parameters *)
+
+    Lambda== {
+        ParameterType    -> External,
+        ParameterName    -> Lambda,
+        BlockName        -> DIM6,
+	    InteractionOrder -> {NP,-1},
+        Value            -> 2000,
+	    TeX              -> \[CapitalLambda],
+        Description      -> "Scale of the new physics"
+	},	
+	
+	(* Internal Parameters *)
+	(*
+	BL== {
+		ParameterName	-> Internal,
+		Value			-> -(23 aS / ( 24 \[Pi])),
+		Description		-> "Beta function including other factors of aS"
+	},*)
+	
+	CC == {
+	    ParameterType -> Internal,
+		Value         -> 4 \[Pi],
+	    Tex           -> C,
+	    Description   -> "Scale factor"
+	}
+  
+};
+
+(* Boolean Function-- We want an expression that is sqrt(2) for different flavor quarks and 1 for same flavor quarks *)
+f[ii_,jj_]:= Boole[ii==jj] + Boole[ii!=jj](2^0.5);
+
+(* Beta Function (11 - 2 nL / 3)=9 for nL=3 *)
+(* BL:=-9 aS^2 /(2 Pi); *)
+
+
+(* Scalar four-fermion operators; Quark type = up *)
+
+Q1u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjM[sp1,sp2].l[sp2,3]) (uqbar[sp3,ii,cc].ProjM[sp3,sp4].uq[sp4,jj,cc])f[ii,jj]]];
+LQ1u[ii_,jj_]:= Q1u[ii,jj] + HC[Q1u[ii,jj]];
+
+Q2u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjM[sp1,sp2].l[sp2,3]) (uqbar[sp3,ii,cc].ProjP[sp3,sp4].uq[sp4,jj,cc])f[ii,jj]]];
+LQ2u[ii_,jj_]:= Q2u[ii,jj] + HC[Q2u[ii,jj]];
+
+Q3u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjP[sp1,sp2].l[sp2,3]) (uqbar[sp3,ii,cc].ProjM[sp3,sp4].uq[sp4,jj,cc])f[ii,jj]]];
+LQ3u[ii_,jj_]:= Q3u[ii,jj] + HC[Q3u[ii,jj]];
+
+Q4u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjP[sp1,sp2].l[sp2,3]) (uqbar[sp3,ii,cc].ProjP[sp3,sp4].uq[sp4,jj,cc])f[ii,jj]]];
+LQ4u[ii_,jj_]:= Q4u[ii,jj] + HC[Q4u[ii,jj]];
+
+LQSu[ii_,jj_]:= LQ1u[ii,jj] + LQ2u[ii,jj] + LQ3u[ii,jj] + LQ4u[ii,jj];
+LQPu[ii_,jj_]:= LQ1u[ii,jj] - LQ2u[ii,jj] - LQ3u[ii,jj] + LQ4u[ii,jj];
+
+(* Scalar four-fermion operators; Quark type = down *)
+
+Q1d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjM[sp1,sp2].l[sp2,3]) (dqbar[sp3,ii,cc].ProjM[sp3,sp4].dq[sp4,jj,cc])f[ii,jj]]];
+LQ1d[ii_,jj_]:= Q1d[ii,jj] + HC[Q1d[ii,jj]];
+
+Q2d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjM[sp1,sp2].l[sp2,3]) (dqbar[sp3,ii,cc].ProjP[sp3,sp4].dq[sp4,jj,cc])f[ii,jj]]];
+LQ2d[ii_,jj_]:= Q2d[ii,jj] + HC[Q2d[ii,jj]];
+
+Q3d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjP[sp1,sp2].l[sp2,3]) (dqbar[sp3,ii,cc].ProjM[sp3,sp4].dq[sp4,jj,cc])f[ii,jj]]];
+LQ3d[ii_,jj_]:= Q3d[ii,jj] + HC[Q3d[ii,jj]];
+
+Q4d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].ProjP[sp1,sp2].l[sp2,3]) (dqbar[sp3,ii,cc].ProjP[sp3,sp4].dq[sp4,jj,cc])f[ii,jj]]];
+LQ4d[ii_,jj_]:= Q4d[ii,jj] + HC[Q4d[ii,jj]];
+
+LQSd[ii_,jj_]:= LQ1d[ii,jj] + LQ2d[ii,jj] + LQ3d[ii,jj] + LQ4d[ii,jj];
+LQPd[ii_,jj_]:= LQ1d[ii,jj] - LQ2d[ii,jj] - LQ3d[ii,jj] + LQ4d[ii,jj];
+
+
+(* Vector four-fermion operators; Quark type = up *)
+
+Q5u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjM[sp2,sp3].l[sp3,3]) (uqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjM[sp5,sp6].uq[sp6,jj,cc])f[ii,jj]]];
+LQ5u[ii_,jj_]:= Q5u[ii,jj] + HC[Q5u[ii,jj]];
+
+Q6u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjM[sp2,sp3].l[sp3,3]) (uqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjP[sp5,sp6].uq[sp6,jj,cc])f[ii,jj]]];
+LQ6u[ii_,jj_]:= Q6u[ii,jj] + HC[Q6u[ii,jj]];
+
+Q7u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjP[sp2,sp3].l[sp3,3]) (uqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjM[sp5,sp6].uq[sp6,jj,cc])f[ii,jj]]];
+LQ7u[ii_,jj_]:= Q7u[ii,jj] + HC[Q7u[ii,jj]];
+
+Q8u[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjP[sp2,sp3].l[sp3,3]) (uqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjP[sp5,sp6].uq[sp6,jj,cc])f[ii,jj]]];
+LQ8u[ii_,jj_]:= Q8u[ii,jj] + HC[Q8u[ii,jj]];
+
+LQVu[ii_,jj_]:= LQ5u[ii,jj] + LQ6u[ii,jj] + LQ7u[ii,jj] + LQ8u[ii,jj];
+LQAu[ii_,jj_]:= LQ5u[ii,jj] - LQ6u[ii,jj] - LQ7u[ii,jj] + LQ8u[ii,jj];
+
+(* Vector four-fermion operators; Quark type = down *)
+
+Q5d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjM[sp2,sp3].l[sp3,3]) (dqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjM[sp5,sp6].dq[sp6,jj,cc])f[ii,jj]]];
+LQ5d[ii_,jj_]:= Q5d[ii,jj] + HC[Q5d[ii,jj]];
+
+Q6d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjM[sp2,sp3].l[sp3,3]) (dqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjP[sp5,sp6].dq[sp6,jj,cc])f[ii,jj]]];
+LQ6d[ii_,jj_]:= Q6d[ii,jj] + HC[Q6d[ii,jj]];
+
+Q7d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjP[sp2,sp3].l[sp3,3]) (dqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjM[sp5,sp6].dq[sp6,jj,cc])f[ii,jj]]];
+LQ7d[ii_,jj_]:= Q7d[ii,jj] + HC[Q7d[ii,jj]];
+
+Q8d[ii_,jj_]:= Module[{sp1,sp2,sp3,sp4,sp5,sp6,mu,cc}, 
+             ExpandIndices[(CC/Lambda^2) (lbar[sp1,2].Ga[mu,sp1,sp2].ProjP[sp2,sp3].l[sp3,3]) (dqbar[sp4,ii,cc].Ga[mu,sp4,sp5].ProjP[sp5,sp6].dq[sp6,jj,cc])f[ii,jj]]];
+LQ8d[ii_,jj_]:= Q8d[ii,jj] + HC[Q8d[ii,jj]];
+
+LQVd[ii_,jj_]:= LQ5d[ii,jj] + LQ6d[ii,jj] + LQ7d[ii,jj] + LQ8d[ii,jj];
+LQAd[ii_,jj_]:= LQ5d[ii,jj] - LQ6d[ii,jj] - LQ7d[ii,jj] + LQ8d[ii,jj];
+
+(* Gluonic Operators *)
+
+(* FST[G_,mu_,nu_,a_]:= 0.5(Eps[mu,nu,alpha,beta].FS[G,alpha,beta,a]); *)
+
+O1:= Module[{sp1,sp2,mu,nu,a}, ExpandIndices[(((-2 CC)/(23 MT))/Lambda^2) (lbar[sp1,2].ProjM[sp1,sp2].l[sp2,3])(-(23 aS / ( 24 \[Pi])))FS[G,mu,nu,a].FS[G,mu,nu,a]]];
+LO1:= O1 + HC[O1];
+
+O2:= Module[{sp1,sp2,mu,nu,a, alpha, beta}, ExpandIndices[((3 \[ImaginaryI] CC)/(MT Lambda^2)) (lbar[sp1,2].ProjM[sp1,sp2].l[sp2,3]) (-aS / ( 48 \[Pi])) (FS[G,mu,nu,a].(Eps[mu,nu,alpha,beta].FS[G,alpha,beta,a]))]];
+LO2:= O2 + HC[O2];
+
+O3:= Module[{sp1,sp2,mu,nu,a}, ExpandIndices[(((-2 CC)/(23 MT))/Lambda^2) (lbar[sp1,2].ProjP[sp1,sp2].l[sp2,3])(-(23 aS / ( 24 \[Pi])))FS[G,mu,nu,a].FS[G,mu,nu,a]]];
+LO3:= O3 + HC[O3];
+
+O4:= Module[{sp1,sp2,mu,nu,a, alpha, beta}, ExpandIndices[((3 \[ImaginaryI] CC)/(MT Lambda^2)) (lbar[sp1,2].ProjP[sp1,sp2].l[sp2,3]) (-aS / ( 48 \[Pi])) (FS[G,mu,nu,a].(Eps[mu,nu,alpha,beta].FS[G,alpha,beta,a]))]];
+LO4:= O4 + HC[O4];
