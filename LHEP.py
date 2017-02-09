@@ -55,12 +55,50 @@ def invariant_mass(event, particle1, particle2):
     p12_info = [p1_info[0][i] + p2_info[0][i] for i in range(4)]
     return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
 ############################################################################################
+# function to extract the azimuthal angle from an event
+############################################################################################
+def azimuthal_angle(event, particle):
+    angle = particle_info(event, particle)
+    if len(angle) == 0:
+        return 0
+    return arctan(angle[1] / angle[0])
+############################################################################################
+# function to extract the rapidity from an event
+############################################################################################
+def rapidity(event, particle)
+    eta = particle_info(event, particle)
+    if len(eta) == 0:
+        return 0
+    return ln( 2 eta[2] / eta[0])
+############################################################################################
+# function to extract missing transverse momentum from an event
+############################################################################################
+def miss_pt(event, particle)
+    mpt = particle_info(event, particle)
+    if len(mpt) == 0:
+        return 0
+    return -sqrt(mpt[0]**2 + mpt[1]**2)
+############################################################################################
 # Open the .lhe files in python
 ############################################################################################
 file_handles = glob.glob("*.lhe")
 if len(file_handles) == 0:
     print("I need at least one .lhe file to parse")
     exit()
+############################################################################################
+# Cuts on events
+############################################################################################
+#
+#    
+#    
+#    
+#
+#
+#
+#
+#
+#
+#
 ############################################################################################
 # Open the .lhe file in python, construct an xml tree, and isolate the event generation info
 ############################################################################################
