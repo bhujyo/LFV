@@ -57,27 +57,40 @@ def invariant_mass(event, particle1, particle2):
 ############################################################################################
 # function to extract the azimuthal angle from an event
 ############################################################################################
-def azimuthal_angle(event, particle):
-    angle = particle_info(event, particle)
-    if len(angle) == 0:
-        return 0
-    return arctan(angle[1] / angle[0])
+#def azimuthal_angle(event, particle):
+#    angle = particle_info(event, particle)
+#    if len(angle) == 0:
+#        return 0
+#    return arctan(angle[1] / angle[0])
 ############################################################################################
 # function to extract the rapidity from an event
 ############################################################################################
-def rapidity(event, particle)
-    eta = particle_info(event, particle)
-    if len(eta) == 0:
-        return 0
-    return ln( 2 eta[2] / eta[0])
+#def rapidity(event, particle):
+#    eta = particle_info(event, particle)
+#    if len(eta) == 0:
+#        return 0
+#    return ln( 2 eta[2] / eta[0])
 ############################################################################################
-# function to extract missing transverse momentum from an event
+# function(s) to extract transverse momentum for a particle and the missing transverse 
+# momentum from an event
 ############################################################################################
-def miss_pt(event, particle)
-    mpt = particle_info(event, particle)
-    if len(mpt) == 0:
-        return 0
-    return -sqrt(mpt[0]**2 + mpt[1]**2)
+def miss_pt(event):
+    entries = [[float(y) for y in x.strip().split()]
+        for x in event.text.strip().split('\n')[1:-6]]
+    pxy = [0, 0]
+    for item in entries:
+        if item[1] == 1.0:
+            pxy[0] = pxy[0] + item[6]
+            pxy[1] = pxy[1] + item[7]
+    return -sqrt(pxy[0]**2 + pxy[1]**2)
+def pt(event, particle):
+    if particle == 'miss':
+        return miss_pt(event)  
+    try:
+        p = particle_info(event, particle)[0]
+    except:
+        p = [0, 0]
+    return sqrt(p[0]**2 + p[1]**2)
 ############################################################################################
 # Open the .lhe files in python
 ############################################################################################
@@ -114,6 +127,10 @@ for handle in file_handles:
     all_events = data.find_all('event')
     for event in all_events:
         invariant_mass_list.append(invariant_mass(event, 'ta+', 'ta-'))
+############################################################################################
+# We will implement checks here : usually commented out
+############################################################################################
+# print(pt(all_events[-1], 'ta+'))
 ############################################################################################
 # Output : generation information
 ############################################################################################
