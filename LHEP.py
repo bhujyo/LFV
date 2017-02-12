@@ -79,7 +79,7 @@ def miss_pt(event):
             pxy[0] = pxy[0] + item[6]
             pxy[1] = pxy[1] + item[7]
     return -sqrt(pxy[0]**2 + pxy[1]**2)
-def pt(event, particle):
+def pt(event, particle='miss'):
     if particle == 'miss':
         return miss_pt(event)  
     try:
