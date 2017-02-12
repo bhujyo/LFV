@@ -6,11 +6,7 @@
 #        Date   :  February 2, 2017
 ############################################################################################
 from __future__ import print_function, division
-import glob
-from bs4 import BeautifulSoup
 from numpy import *
-import re
-import matplotlib.pyplot as plt
 ############################################################################################
 # pdg particle dictionary
 ############################################################################################
@@ -36,7 +32,7 @@ def str_format(string):
 ############################################################################################
 # function to extract a particle's kinematic information
 ############################################################################################
-def particle_info(event, particle):
+def particle_info(event, particle):              # generates a list : [px, py, pz, E, m]
     entries = [[float(y) for y in x.strip().split()]
         for x in event.text.strip().split('\n')[1:-6]]
     info = []
@@ -55,35 +51,40 @@ def invariant_mass(event, particle1, particle2):
     p12_info = [p1_info[0][i] + p2_info[0][i] for i in range(4)]
     return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
 ############################################################################################
-# Open the .lhe files in python
+# function to extract the azimuthal angle from an event
 ############################################################################################
-file_handles = glob.glob("*.lhe")
-if len(file_handles) == 0:
-    print("I need at least one .lhe file to parse")
-    exit()
+#def azimuthal_angle(event, particle):
+#    angle = particle_info(event, particle)
+#    if len(angle) == 0:
+#        return 0
+#    return arctan(angle[1] / angle[0])
 ############################################################################################
-# Open the .lhe file in python, construct an xml tree, and isolate the event generation info
+# function to extract the rapidity from an event
 ############################################################################################
-n_of_events = []
-cs = []
-invariant_mass_list = []
-for handle in file_handles:
-    data = BeautifulSoup(open(handle, 'r').read(), "lxml")
-    gen_info = dict([[str_format(y) for y in x.split(':')]
-        for x in data.mggenerationinfo.string.strip().split('\n')])
-    n_of_events.append(gen_info['#  Number of Events'])
-    cs.append(gen_info['#  Integrated weight (pb)'])
-    all_events = data.find_all('event')
-    for event in all_events:
-        invariant_mass_list.append(invariant_mass(event, 'ta+', 'ta-'))
+#def rapidity(event, particle):
+#    eta = particle_info(event, particle)
+#    if len(eta) == 0:
+#        return 0
+#    return ln( 2 eta[2] / eta[0])
 ############################################################################################
-# Output : generation information
+# function(s) to extract transverse momentum for a particle and the missing transverse 
+# momentum from an event
 ############################################################################################
-print('Total number of events analyzed:', sum(n_of_events))
-print('Total cross section:', sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
-     /sum(n_of_events), 'pb')
-print('Retrieving events ...')
+def miss_pt(event):
+    entries = [[float(y) for y in x.strip().split()]
+        for x in event.text.strip().split('\n')[1:-6]]
+    pxy = [0, 0]
+    for item in entries:
+        if item[1] == 1.0:
+            pxy[0] = pxy[0] + item[6]
+            pxy[1] = pxy[1] + item[7]
+    return -sqrt(pxy[0]**2 + pxy[1]**2)
+def pt(event, particle):
+    if particle == 'miss':
+        return miss_pt(event)  
+    try:
+        p = particle_info(event, particle)[0]
+    except:
+        p = [0, 0]
+    return sqrt(p[0]**2 + p[1]**2)
 ############################################################################################
-plt.hist(invariant_mass_list, bins=300)
-plt.title('histogram for ta+ ta- events distribution')
-plt.show()
