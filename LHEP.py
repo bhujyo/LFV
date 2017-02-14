@@ -30,7 +30,7 @@ def str_format(string):
     except:
         return string
 ############################################################################################
-# function to extract a particle's kinematic information
+# functions to extract a particle's kinematic information, pt, rapidity, azimuthal angle
 ############################################################################################
 def particle_info(event, particle):              # generates a list : [px, py, pz, E, m]
     entries = [[float(y) for y in x.strip().split()]
@@ -38,17 +38,19 @@ def particle_info(event, particle):              # generates a list : [px, py, p
     info = []
     for line in entries:
         if line[0] == pdg_id_dict[particle]:
-            info.append(line[6:11]) 
+            info.append(line[6:11])
     return info
-############################################################################################
-# function to extract the invariant mass of 2 particles
-############################################################################################
-def invariant_mass(event, particle1, particle2):
-    p1_info = particle_info(event, particle1)
-    p2_info = particle_info(event, particle2)
-    if len(p1_info) == 0 or len(p2_info) == 0:
-        return 0
-    p12_info = [p1_info[0][i] + p2_info[0][i] for i in range(4)]
+
+def p_t(particle_info):      # internal function only; input list = [px, py, pz, E, m]
+    return sqrt(particle_info[0]**2 + particle_info[1]**2)
+
+def rapidity(particle_info)  # internal function only; input list = [px, py, pz, E, m]
+    p = sqrt(sum([x**2 for x in particle_info]))
+    pz = particle_info[2]
+    return 0.5 * log((p + pz)/(p - pz))
+
+def invariant_mass(p1_info, p2_info): # internal function only; input list = [px, ...]
+    p12_info = [p1_info[i] + p2_info[i] for i in range(4)]
     return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
 ############################################################################################
 # function to extract the azimuthal angle from an event
