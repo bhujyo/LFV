@@ -16,6 +16,16 @@ pdg_id_dict = {'d': 1.0, 'd~':-1.0,'u': 2.0, 'u~':-2.0, 's': 3.0, 's~':-3.0,
 'ta+':-15.0, 'vt': 16.0, 'vt~':-16.0, 'g':21.0, 'a':22.0, 'z':23.0, 'w+':24.0, 'w-':-24.0,
 'h0':25.0}
 ############################################################################################
+# input numbers
+############################################################################################
+par_in = {'mt':[173.21,0.51,0.21]}
+############################################################################################
+# list analysis function
+def centerr(in_list, sigma=1):
+    cent = in_list[0]
+    err = sigma * sqrt(sum([x**2 for x in in_list[1:]]))
+    return [cent - err, cent + err]
+############################################################################################
 # function to appropriately format a string
 ############################################################################################
 LHEf_cols = ['pdg_id', 'status', 'parent', 'x', 'c1', 'c2', 'px', 'py', 'pz', 'E', 'm', 'x',
@@ -30,63 +40,58 @@ def str_format(string):
     except:
         return string
 ############################################################################################
-# functions to extract a particle's kinematic information, pt, rapidity, azimuthal angle
+# functions to extract info from an event
 ############################################################################################
-def particle_info(event, particle):              # generates a list : [px, py, pz, E, m]
-    entries = [[float(y) for y in x.strip().split()]
+def event_info(event):                    # list with information about particles in event
+    return [[float(y) for y in x.strip().split()]
         for x in event.text.strip().split('\n')[1:-6]]
+def particle_info(event, particle):        # generates a list : [[px, py, pz, E, m], ...]
+    entries = event_info(event)            # ordered by largest p_t
+    if abs(pdg_id_dict[particle]) in [12.0, 14.0, 16.0]:
+        return [0, 0, 0, 0, 0]
     info = []
     for line in entries:
         if line[0] == pdg_id_dict[particle]:
             info.append(line[6:11])
-    return info
+        elif abs(line[0]) <= 6.0 and abs(line[0]) == pdg_id_dict[particle]:
+            info.append(line[6:11])
+    return sorted(info, key = lambda x : p_t(x), reverse = True)
+############################################################################################
+# functions to extract kinematic information, pt, rapidity, azimuthal angle, etc.
+############################################################################################
+def p_t(p_list):      # internal function only; input list = [px, py, pz, E, m]
+    return sqrt(p_list[0]**2 + p_list[1]**2)
 
-def p_t(particle_info):      # internal function only; input list = [px, py, pz, E, m]
-    return sqrt(particle_info[0]**2 + particle_info[1]**2)
+def rapidity(p_list):  # internal function only; input list = [px, py, pz, E, m]
+    p = sqrt(sum([x**2 for x in p_list]))
+    pz = p_list[2]
+    try:
+        eta = 0.5 * log((p + pz)/(p - pz))
+    except:
+        eta = 4.0
+    return eta
 
-def rapidity(particle_info)  # internal function only; input list = [px, py, pz, E, m]
-    p = sqrt(sum([x**2 for x in particle_info]))
-    pz = particle_info[2]
-    return 0.5 * log((p + pz)/(p - pz))
+def momentum_sum(p1, p2):      # internal function only; input 2 lists = [px, ...], ...
+    return [p1[i] + p2[i] for i in range(4)]
 
-def invariant_mass(p1_info, p2_info): # internal function only; input list = [px, ...]
-    p12_info = [p1_info[i] + p2_info[i] for i in range(4)]
-    return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
+def invariant_mass(p):         # internal function only; input list = [px, ...]
+    return sqrt(p[3]**2 - p[0]**2 - p[1]**2 - p[2]**2)
+
+def azimuthal_angle(particle_info):   # internal function only; input list = [px, ...]
+    try:
+        phi = arctan(particle_info[1]/particle_info[0])
+    except:
+        phi = pi/2
+    return phi
 ############################################################################################
-# function to extract the azimuthal angle from an event
-############################################################################################
-#def azimuthal_angle(event, particle):
-#    angle = particle_info(event, particle)
-#    if len(angle) == 0:
-#        return 0
-#    return arctan(angle[1] / angle[0])
-############################################################################################
-# function to extract the rapidity from an event
-############################################################################################
-#def rapidity(event, particle):
-#    eta = particle_info(event, particle)
-#    if len(eta) == 0:
-#        return 0
-#    return ln( 2 eta[2] / eta[0])
-############################################################################################
-# function(s) to extract transverse momentum for a particle and the missing transverse 
-# momentum from an event
+# function to extract the missing transverse momentum from an event
 ############################################################################################
 def miss_pt(event):
-    entries = [[float(y) for y in x.strip().split()]
-        for x in event.text.strip().split('\n')[1:-6]]
+    entries = event_info(event)
     pxy = [0, 0]
     for item in entries:
-        if item[1] == 1.0:
+        if item[1] == 1.0 and rapidity(item[6:11]) <= 3.5:
             pxy[0] = pxy[0] + item[6]
             pxy[1] = pxy[1] + item[7]
     return -sqrt(pxy[0]**2 + pxy[1]**2)
-def pt(event, particle='miss'):
-    if particle == 'miss':
-        return miss_pt(event)  
-    try:
-        p = particle_info(event, particle)[0]
-    except:
-        p = [0, 0]
-    return sqrt(p[0]**2 + p[1]**2)
 ############################################################################################
