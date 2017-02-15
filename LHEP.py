@@ -71,18 +71,18 @@ def rapidity(p_list):  # internal function only; input list = [px, py, pz, E, m]
         eta = 4.0
     return eta
 
-def momentum_sum(p1, p2):      # internal function only; input 2 lists = [px, ...], ...
-    return [p1[i] + p2[i] for i in range(4)]
+def invariant_mass(p_list):         # internal function only; input list = [px, ...]
+    return sqrt(p_list[3]**2 - p_list[0]**2 - p_list[1]**2 - p_list[2]**2)
 
-def invariant_mass(p):         # internal function only; input list = [px, ...]
-    return sqrt(p[3]**2 - p[0]**2 - p[1]**2 - p[2]**2)
-
-def azimuthal_angle(particle_info):   # internal function only; input list = [px, ...]
+def azimuthal_angle(p_list):   # internal function only; input list = [px, ...]
     try:
-        phi = arctan(particle_info[1]/particle_info[0])
+        phi = arctan(p_list[1]/p_list[0])
     except:
         phi = pi/2
     return phi
+
+def momentum_sum(p1, p2):      # internal function only; input 2 lists = [px, ...], ...
+    return [p1[i] + p2[i] for i in range(4)]
 ############################################################################################
 # function to extract the missing transverse momentum from an event
 ############################################################################################
