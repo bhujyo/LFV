@@ -22,9 +22,9 @@ LHEP.py (Analyze.py uses all these functions):
 The output lists within the big list is arranged in a descending order by transverse momentum (p_t)
 3. p_t(list) : generates the the transverse momentum pt from the list [px, py, pz, E, m].
 4. rapidity, invariant_mass, and azimuthal_angle are similar functions as above
-5. momentum_sum(p1, p2) : generates the four momentum p12 = p1 + p2 and returns it in the form 
+5. momentum_sum(p1, p2) : generates the four momentum p12 = p1 + p2 and returns it in the form
 [p12x, p12y, p12z, E12]
-6. miss_pt(event) : generates the missing transverse momentum in an event (any particle that is a 
+6. miss_pt(event) : generates the missing transverse momentum in an event (any particle that is a
 neutrino or has rapidity larger than 3.5 contributes to this missing pt.)
 
 To be continued ...
