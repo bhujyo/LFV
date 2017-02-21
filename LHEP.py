@@ -140,7 +140,7 @@ def cut_pass(event):
         elif event_info(event)[entry][0] == 11.0 and rapidity(event_info(event)[entry][6:11]) > 2.5:
             failed_particles += 1
             entry += 1
-        elif event_info(event)[entry][0] == -11.0 and rapidity(event_info(event)[entry][6:11]) < 2.5:
+        elif event_info(event)[entry][0] == -11.0 and rapidity(event_info(event)[entry][6:11]) > 2.5:
             failed_particles += 1
             entry += 1
         else:
@@ -206,7 +206,8 @@ print('Number of cut events:               ', cut_events)
 print('Cross section after cuts:           ', (len(kept_events)) / 10000.0 * sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
      /sum(n_of_events), 'pb')
 ############################################################################################
+# Output : plots
 ############################################################################################
-plt.hist(invariant_mass_list, bins=300)
-plt.title('histogram for ta+ ta- events distribution')
-plt.show()
+#plt.hist(invariant_mass_list, bins=300)
+#plt.title('histogram for ta+ ta- events distribution')
+#plt.show()
