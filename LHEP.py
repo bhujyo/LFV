@@ -2,15 +2,15 @@
 #        This code parses through .lhe files obtained from madgraph
 #        The code produces a plot of number of events vs invariant mass of two final state
 #         particles
-#        Author :  B. Bhattacharya  (Wayne State University)
-#        Date   :  February 2, 2017
+#        Author :  B. Bhattacharya, R. Morgan  (Wayne State University)
+#        Date   :  February 17, 2017
 ############################################################################################
 from __future__ import print_function, division
+from numpy import *
+import matplotlib.pyplot as plt
 import glob
 from bs4 import BeautifulSoup
-from numpy import *
 import re
-import matplotlib.pyplot as plt
 ############################################################################################
 # pdg particle dictionary
 ############################################################################################
@@ -19,6 +19,16 @@ pdg_id_dict = {'d': 1.0, 'd~':-1.0,'u': 2.0, 'u~':-2.0, 's': 3.0, 's~':-3.0,
 've': 12.0, 've~':-12.0, 'mu-': 13.0,'mu+':-13.0, 'vm': 14.0, 'vm~':-14.0,'ta-': 15.0, 
 'ta+':-15.0, 'vt': 16.0, 'vt~':-16.0, 'g':21.0, 'a':22.0, 'z':23.0, 'w+':24.0, 'w-':-24.0,
 'h0':25.0}
+############################################################################################
+# input numbers
+############################################################################################
+par_in = {'mt':[173.21,0.51,0.21]}
+############################################################################################
+# list analysis function
+def centerr(in_list, sigma=1):
+    cent = in_list[0]
+    err = sigma * sqrt(sum([x**2 for x in in_list[1:]]))
+    return [cent - err, cent + err]
 ############################################################################################
 # function to appropriately format a string
 ############################################################################################
@@ -34,16 +44,60 @@ def str_format(string):
     except:
         return string
 ############################################################################################
-# function to extract a particle's kinematic information
+# functions to extract info from an event
 ############################################################################################
-def particle_info(event, particle):
-    entries = [[float(y) for y in x.strip().split()]
+def event_info(event):                    # list with information about particles in event
+    return [[float(y) for y in x.strip().split()]
         for x in event.text.strip().split('\n')[1:-6]]
+def particle_info(event, particle):        # generates a list : [[px, py, pz, E, m], ...]
+    entries = event_info(event)            # ordered by largest p_t
+    if abs(pdg_id_dict[particle]) in [12.0, 14.0, 16.0]:
+        return [0, 0, 0, 0, 0]
     info = []
     for line in entries:
         if line[0] == pdg_id_dict[particle]:
-            info.append(line[6:11]) 
-    return info
+            info.append(line[6:11])
+        elif abs(line[0]) <= 6.0 and abs(line[0]) == pdg_id_dict[particle]:
+            info.append(line[6:11])
+    return sorted(info, key = lambda x : p_t(x), reverse = True)
+############################################################################################
+# functions to extract kinematic information, pt, rapidity, azimuthal angle, etc.
+############################################################################################
+def p_t(p_list):      # internal function only; input list = [px, py, pz, E, m]
+    return sqrt(p_list[0]**2 + p_list[1]**2)
+
+def rapidity(p_list):  # internal function only; input list = [px, py, pz, E, m]
+    p = sqrt(sum([x**2 for x in p_list]))
+    pz = p_list[2]
+    try:
+        eta = 0.5 * log((p + pz)/(p - pz))
+    except:
+        eta = 4.0
+    return eta
+
+def invariant_mass(p_list):         # internal function only; input list = [px, ...]
+    return sqrt(p_list[3]**2 - p_list[0]**2 - p_list[1]**2 - p_list[2]**2)
+
+def azimuthal_angle(p_list):   # internal function only; input list = [px, ...]
+    try:
+        phi = arctan(p_list[1]/p_list[0])
+    except:
+        phi = pi/2
+    return phi
+
+def momentum_sum(p1, p2):      # internal function only; input 2 lists = [px, ...], ...
+    return [p1[i] + p2[i] for i in range(4)]
+############################################################################################
+# function to extract the missing transverse momentum from an event
+############################################################################################
+def miss_pt(event):
+    entries = event_info(event)
+    pxy = [0, 0]
+    for item in entries:
+        if item[1] == 1.0 and rapidity(item[6:11]) <= 3.5:
+            pxy[0] = pxy[0] + item[6]
+            pxy[1] = pxy[1] + item[7]
+    return -sqrt(pxy[0]**2 + pxy[1]**2)
 ############################################################################################
 # function to extract the invariant mass of 2 particles
 ############################################################################################
@@ -55,42 +109,57 @@ def invariant_mass(event, particle1, particle2):
     p12_info = [p1_info[0][i] + p2_info[0][i] for i in range(4)]
     return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
 ############################################################################################
-# function to extract the azimuthal angle from an event
+# funciton to preform all cuts
 ############################################################################################
-#def azimuthal_angle(event, particle):
-#    angle = particle_info(event, particle)
-#    if len(angle) == 0:
-#        return 0
-#    return arctan(angle[1] / angle[0])
+def cut_pass(event):
+    failed_particles = 0
+    entry = 0
+    for entry in range(len(event_info(event))):
+        #Transverse momentum cut on muons
+        if event_info(event)[entry][0] == 13.0 and p_t(event_info(event)[entry][6:11]) < 20.0:
+            failed_particles += 1
+            entry += 1
+        elif event_info(event)[entry][0] == -13.0 and p_t(event_info(event)[entry][6:11]) < 20.0:
+            failed_particles += 1
+            entry += 1
+        #Transverse momentum cut on electrons
+        elif event_info(event)[entry][0] == 11.0 and p_t(event_info(event)[entry][6:11]) < 20.0:
+            failed_particles += 1
+            entry += 1
+        elif event_info(event)[entry][0] == -11.0 and p_t(event_info(event)[entry][6:11]) < 20.0:
+            failed_particles += 1
+            entry += 1
+        #Rapidity cut on muons
+        if event_info(event)[entry][0] == 13.0 and rapidity(event_info(event)[entry][6:11]) > 2.5:
+            failed_particles += 1
+            entry += 1
+        elif event_info(event)[entry][0] == -13.0 and rapidity(event_info(event)[entry][6:11]) > 2.5:
+            failed_particles += 1
+            entry += 1
+        #Rapidity cut on electrons
+        elif event_info(event)[entry][0] == 11.0 and rapidity(event_info(event)[entry][6:11]) > 2.5:
+            failed_particles += 1
+            entry += 1
+        elif event_info(event)[entry][0] == -11.0 and rapidity(event_info(event)[entry][6:11]) < 2.5:
+            failed_particles += 1
+            entry += 1
+        else:
+            entry += 1
+                       
+#Need to include other cuts
+    if failed_particles == 0:
+        return True
+    else:
+        return False
+
 ############################################################################################
-# function to extract the rapidity from an event
 ############################################################################################
-#def rapidity(event, particle):
-#    eta = particle_info(event, particle)
-#    if len(eta) == 0:
-#        return 0
-#    return ln( 2 eta[2] / eta[0])
+# Begin analysis of events
 ############################################################################################
-# function(s) to extract transverse momentum for a particle and the missing transverse 
-# momentum from an event
 ############################################################################################
-def miss_pt(event):
-    entries = [[float(y) for y in x.strip().split()]
-        for x in event.text.strip().split('\n')[1:-6]]
-    pxy = [0, 0]
-    for item in entries:
-        if item[1] == 1.0:
-            pxy[0] = pxy[0] + item[6]
-            pxy[1] = pxy[1] + item[7]
-    return -sqrt(pxy[0]**2 + pxy[1]**2)
-def pt(event, particle):
-    if particle == 'miss':
-        return miss_pt(event)  
-    try:
-        p = particle_info(event, particle)[0]
-    except:
-        p = [0, 0]
-    return sqrt(p[0]**2 + p[1]**2)
+
+print('Retrieving events...')
+
 ############################################################################################
 # Open the .lhe files in python
 ############################################################################################
@@ -99,25 +168,11 @@ if len(file_handles) == 0:
     print("I need at least one .lhe file to parse")
     exit()
 ############################################################################################
-# Cuts on events
-############################################################################################
-#
-#    
-#    
-#    
-#
-#
-#
-#
-#
-#
-#
-############################################################################################
 # Open the .lhe file in python, construct an xml tree, and isolate the event generation info
 ############################################################################################
+invariant_mass_list = []
 n_of_events = []
 cs = []
-invariant_mass_list = []
 for handle in file_handles:
     data = BeautifulSoup(open(handle, 'r').read(), "lxml")
     gen_info = dict([[str_format(y) for y in x.split(':')]
@@ -125,19 +180,32 @@ for handle in file_handles:
     n_of_events.append(gen_info['#  Number of Events'])
     cs.append(gen_info['#  Integrated weight (pb)'])
     all_events = data.find_all('event')
+
     for event in all_events:
-        invariant_mass_list.append(invariant_mass(event, 'ta+', 'ta-'))
+       invariant_mass_list.append(invariant_mass(event, 'ta+', 'ta-'))
 ############################################################################################
-# We will implement checks here : usually commented out
+#Call the cut function for each event
 ############################################################################################
-# print(pt(all_events[-1], 'ta+'))
+cut_events = 0
+kept_events = []
+
+for event in all_events:
+    if cut_pass(event):
+        kept_events.append(event)
+    else:
+        cut_events += 1
+
 ############################################################################################
 # Output : generation information
 ############################################################################################
-print('Total number of events analyzed:', sum(n_of_events))
-print('Total cross section:', sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
+print('Total number of events analyzed:    ', sum(n_of_events))
+print('Cross section before cuts:          ', sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
      /sum(n_of_events), 'pb')
-print('Retrieving events ...')
+print('Number of kept events:              ', len(kept_events))
+print('Number of cut events:               ', cut_events)
+print('Cross section after cuts:           ', (len(kept_events)) / 10000.0 * sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
+     /sum(n_of_events), 'pb')
+############################################################################################
 ############################################################################################
 plt.hist(invariant_mass_list, bins=300)
 plt.title('histogram for ta+ ta- events distribution')
