@@ -97,7 +97,7 @@ def miss_pt(event):
         if item[1] == 1.0 and rapidity(item[6:11]) <= 3.5:
             pxy[0] = pxy[0] + item[6]
             pxy[1] = pxy[1] + item[7]
-    return -sqrt(pxy[0]**2 + pxy[1]**2)
+    return [pxy[0], pxy[1], -sqrt(pxy[0]**2 + pxy[1]**2)]
 ############################################################################################
 # function to extract the invariant mass of 2 particles
 ############################################################################################
@@ -199,8 +199,9 @@ def cuts3_7_pass(event):
         failed_particles = 1
     elif p_t(lepton12_search(event)[0][6:11]) < p_t(lepton12_search(event)[1][6:11]):
         failed_particles = 1
-    #elif abs(azimuthal_angle(lepton12_search(event)[0][6:11]) - azimuthal_angle(lepton12_search(event)[1][6:11])) > 0.6:
-    
+    elif abs(azimuthal_angle(miss_pt(event)) - azimuthal_angle(lepton12_search(event)[1][6:11])) > 0.6:
+        failed_particles = 1
+
     if failed_particles == 0:
         return True
     else:
