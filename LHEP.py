@@ -109,9 +109,50 @@ def invariant_mass(event, particle1, particle2):
     p12_info = [p1_info[0][i] + p2_info[0][i] for i in range(4)]
     return sqrt(p12_info[3]**2 - p12_info[0]**2 - p12_info[1]**2 - p12_info[2]**2)
 ############################################################################################
-# funciton to preform all cuts
+# function to search events for flavor 1 and 2 leptons
 ############################################################################################
-def cut_pass(event):
+def lepton12_search(event):
+    entry = 0
+    muon_check = False
+    muon = []
+    positron = []
+    antimuon = []
+    electron = []
+    for entry in range(len(event_info(event))):
+        if event_info(event)[entry][0] == 13.0:
+            muon = event_info(event)[entry]
+            entry = len(event_info(event)) + 1
+            muon_check = True
+        else:
+            entry += 1
+    for entry in range(len(event_info(event))):
+        if event_info(event)[entry][0] == -11.0:
+            positron = event_info(event)[entry]
+            entry = len(event_info(event)) + 1
+        else:
+            entry += 1
+    for entry in range(len(event_info(event))):
+        if event_info(event)[entry][0] == -13.0:
+            antimuon = event_info(event)[entry]
+            entry = len(event_info(event)) + 1
+        else:
+            entry += 1
+    for entry in range(len(event_info(event))):
+        if event_info(event)[entry][0] == 11.0:
+            electron = event_info(event)[entry]
+            entry = len(event_info(event)) + 1
+        else:
+            entry += 1
+
+    if muon_check:
+        return [muon, positron]
+    else:
+        return [antimuon, electron]
+        
+############################################################################################
+# funciton to preform equation 3.5 cuts
+############################################################################################
+def cuts3_5_pass(event):
     failed_particles = 0
     entry = 0
     for entry in range(len(event_info(event))):
@@ -143,14 +184,50 @@ def cut_pass(event):
         elif event_info(event)[entry][0] == -11.0 and rapidity(event_info(event)[entry][6:11]) > 2.5:
             failed_particles += 1
             entry += 1
-        else:
-            entry += 1
-                       
-#Need to include other cuts
+       
     if failed_particles == 0:
         return True
     else:
         return False
+
+############################################################################################
+# function to preform equation 3.7 cuts
+############################################################################################
+def cuts3_7_pass(event):
+    failed_particles = 0
+    if abs(azimuthal_angle(lepton12_search(event)[0][6:11]) - azimuthal_angle(lepton12_search(event)[1][6:11])) < 2.75:
+        failed_particles = 1
+    elif p_t(lepton12_search(event)[0][6:11]) < p_t(lepton12_search(event)[1][6:11]):
+        failed_particles = 1
+    #elif abs(azimuthal_angle(lepton12_search(event)[0][6:11]) - azimuthal_angle(lepton12_search(event)[1][6:11])) > 0.6:
+    
+    if failed_particles == 0:
+        return True
+    else:
+        return False
+
+############################################################################################
+# function to preform equation 3.8 cut
+############################################################################################
+def cuts3_8_pass(event):
+    failed_particles = 0
+    if invariant_mass(event, 'mu+', 'ta-') < 250.0 and invariant_mass(event, 'mu-', 'ta+') < 250.0:
+        failed_particles = 1
+
+    if failed_particles == 0:
+        return True
+    else:
+        return False
+
+############################################################################################
+# function to determine if an event has passed all cuts
+############################################################################################
+def cut_pass(event): 
+    if cuts3_5_pass(event) and cuts3_7_pass(event) and cuts3_8_pass(event):
+        return True
+    else:
+        return False
+
 
 ############################################################################################
 ############################################################################################
@@ -198,6 +275,7 @@ for event in all_events:
 ############################################################################################
 # Output : generation information
 ############################################################################################
+print('------------------------------------------------------')
 print('Total number of events analyzed:    ', sum(n_of_events))
 print('Cross section before cuts:          ', sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
      /sum(n_of_events), 'pb')
@@ -205,6 +283,7 @@ print('Number of kept events:              ', len(kept_events))
 print('Number of cut events:               ', cut_events)
 print('Cross section after cuts:           ', (len(kept_events)) / 10000.0 * sum([n_of_events[i] * cs[i] for i in range(len(n_of_events))])
      /sum(n_of_events), 'pb')
+print('------------------------------------------------------')
 ############################################################################################
 # Output : plots
 ############################################################################################
